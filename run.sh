@@ -22,16 +22,18 @@ check_root() {
 
 run_terraform() {
     echo "---------------------------------------------------------------------"
-    read -p ">>> Run Terraform or destroy? (y/n): " choice
+    read -p ">>> Run Terraform (r), destroy (d) or exit (e)?: " choice
     echo "---------------------------------------------------------------------"
-    if [ "$choice" == "y" ]; then
+    if [ "$choice" == "r" ]; then
         terraform init
         terraform plan
         terraform validate
         terraform apply
         #terraform output
-    else
+    elif [ "$choice" == "d" ]; then
         terraform destroy
+    else
+        exit 1
     fi
 }
 
