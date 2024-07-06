@@ -19,17 +19,27 @@ echo " "
 sudo nano ../gcloud.json
 
 echo "-------------------------------------------------"
-echo " > Insert Postgres Password"
+read -p " > Insert project name (Default: k8s-devops-cf): " pjname
 echo "-------------------------------------------------"
 echo " "
-read -p ">>> Insert Postgres password: " pgpass
+sudo sed -i "s/$pjname/k8s-devops-cf/g" ../terraform/variables.tf
+
+echo "-------------------------------------------------"
+read -p " > Insert ssh username (Default: gsmcfdevops): " sshusername
+echo "-------------------------------------------------"
+echo " "
+sudo sed -i "s/$sshusername/gsmcfdevops/g" ../terraform/variables.tf
+
+echo "-------------------------------------------------"
+read -p " > Insert Postgres password: " pgpass
+echo "-------------------------------------------------"
+echo " "
+
 sudo sed -i "s/$pgpass/postgres_this_password_will_change/g" ../ansible/roles/main/tasks/main.yml
 
 echo "-------------------------------------------------"
-echo " > Insert Grafana Password"
+read -p " > Insert Grafana password: " grafanapass
 echo "-------------------------------------------------"
-echo " "
-read -p ">>> Insert Grafana password: " grafanapass
 sudo sed -i "s/$grafanapass/grafana_this_password_will_change/g" ../ansible/roles/k8smaster/tasks/main.yml
 
 echo " "

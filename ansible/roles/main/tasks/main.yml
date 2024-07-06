@@ -189,9 +189,9 @@
     warn: no
 
 - name: SonarQube - Copy the SonarQube service configuration file
-      copy:
-        src: "../../sonarqube.service"
-        dest: "/etc/systemd/system/sonarqube.service"
+  copy:
+    src: "../../sonarqube.service"
+    dest: "/etc/systemd/system/sonarqube.service"
 
 - name: SonarQube - Enable and start the SonarQube service
   shell: |

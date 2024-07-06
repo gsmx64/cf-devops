@@ -136,25 +136,24 @@
   notify:
   - Restart kubelet
 
-- name: Observability - Add Prometheus Helm Repository
+- name: Monitoring - Add Prometheus Helm Repository
   shell: |
     helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-    kubectl create namespace prometheus
+    kubectl create namespace monitoring
     helm install prometheus prometheus-community/prometheus \
-    --namespace prometheus \
-    --set alertmanager.persistentVolume.storageClass="gp2" \
-    --set server.persistentVolume.storageClass="gp2"
+    --namespace monitoring \
+    --set alertmanager.persistentVolume.storageClass="pd.csi.storage.gke.io" \
+    --set server.persistentVolume.storageClass="pd.csi.storage.gke.io"
   args:
     warn: no
   notify:
   - Restart kubelet
 
-- name: Observability - Add Grafana Helm Repository
+- name: Monitoring - Add Grafana Helm Repository
   shell: |
     helm repo add grafana https://grafana.github.io/helm-charts
-    kubectl create namespace grafana
     helm install grafana grafana/grafana \
-    --namespace grafana \
+    --namespace monitoring \
     --set persistence.storageClassName="gp2" \
     --set persistence.enabled=true \
     --set adminPassword=grafana_this_password_will_change
@@ -172,8 +171,10 @@
     state: "{{item.state}}"
     zone: "{{item.zone}}"
   with_items:
-   - {port: "6443", proto: "tcp", state: "enabled", zone: "public" }
-   - {port: "2379-2380", proto: "tcp", state: "enabled", zone: "public" }
-   - {port: "10250", proto: "tcp", state: "enabled", zone: "public" }
-   - {port: "10259", proto: "tcp", state: "enabled", zone: "public" }
-   - {port: "10257", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "6443", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "2379-2380", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "10250", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "10259", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "10257", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "8080", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "8081", proto: "tcp", state: "enabled", zone: "public" }
