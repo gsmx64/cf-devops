@@ -1,0 +1,6 @@
+- hosts: main 
+  name: Deploy main VM
+  become: yes
+
+  roles:
+    - main

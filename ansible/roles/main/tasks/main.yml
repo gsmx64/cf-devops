@@ -1,0 +1,236 @@
+---
+# tasks file for k8smaster
+- name: Update all installed packages using YUM module
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+    update_only: yes
+  register: yum_update_status
+
+- name: Install required system packages
+  dnf:
+    name:
+      - ca-certificates
+      - curl
+      - wget
+      - nano
+      - unzip
+    state: latest
+    update_cache: true
+
+- name: Docker Engine - Uninstall old versions
+  dnf:
+    name:
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+    state: absent
+
+- name: Docker Engine - Add Docker Repository
+  shell: |
+    dnf install -y yum-utils
+    yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    warn: no
+
+- name: Docker Engine - Install the latest version of Docker Engine and containerd
+  dnf:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+  notify: Start and enable docker
+
+- name: Docker Engine - Add the current user to the docker group
+  user:
+    name: gsmcfdevops
+    groups: docker
+    append: yes
+
+- name: Docker Engine - Start and enable docker
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Add Jenkins LTS Repository
+  shell: |
+    yum-config-manager --add-repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+    rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+    yum upgrade
+  args:
+    warn: no
+
+- name: Jenkins - Install Jenkins required system packages
+  shell: |
+    yum install fontconfig java-17-openjdk
+  args:
+    warn: no
+
+- name: Jenkins - Install Jenkins
+  shell: |
+    yum install jenkins
+    systemctl daemon-reload
+    systemctl enable jenkins
+    systemctl start jenkins
+  args:
+    warn: no
+
+- name: PostgreSQL 15 for SonarQube - Add Repository
+  shell: |
+    yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y
+    dnf update -y
+  args:
+    warn: no
+
+- name: PostgreSQL 15 for SonarQube - Install PostgreSQL 15
+  shell: |
+    dnf install -y postgresql15-server
+    /usr/pgsql-15/bin/postgresql-15-setup initdb
+    systemctl enable postgresql-15
+    systemctl start postgresql-15
+  args:
+    warn: no
+
+- name: PostgreSQL 15 for SonarQube - Create DBA user
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: dba
+    db: postgres
+    password: "postgres_this_password_will_change"
+    priv: "ALL"
+
+- name: PostgreSQL 15 for SonarQube - Configure pg_hba.conf to enable MD5
+  become: yes
+  become_user: postgres
+  blockinfile:
+    dest: "/var/lib/pgsql/14/data/pg_hba.conf"
+    insertafter: "# TYPE  DATABASE        USER            ADDRESS                 METHOD"
+    block: |
+      local   all             dba                 trust
+
+- name: PostgreSQL 15 for SonarQube - Reload configuration
+  become: yes
+  become_user: postgres
+  shell: /usr/pgsql-15/bin/pg_ctl reload -D /var/lib/pgsql/15/data
+
+- name: SonarQube - Add system requirements
+  shell: |
+    sysctl vm.max_map_count
+    sysctl fs.file-max
+    ulimit -n
+    ulimit -u
+  args:
+    warn: no
+
+- name: SonarQube - Create the sonar user for running the SonarQube services
+  user:
+    name: sonar
+    comment: System user for running SonarQube
+
+- name: SonarQube - Download SonarQube
+  get_url:
+    url: "https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.9.6.92038.zip"
+    dest: "/opt/sonarqube-9.9.6.92038.zip"
+
+- name: SonarQube - Extract SonarQube
+  unarchive:
+    src: "/opt/sonarqube-9.9.6.92038.zip"
+    dest: "/opt"
+    copy: no
+    owner: sonar
+
+- name: SonarQube - Link this version of sonarqube as the server SonarQube version
+  file:
+    src: "/opt/sonarqube-9.9.6.92038"
+    dest: "/opt/sonarqube"
+    state: link
+    owner: sonar
+
+- name: SonarQube - Configure SonarQube DB username
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.jdbc.username="
+    insertafter: "^#sonar.jdbc.username="
+    line: "sonar.jdbc.username=postgres"
+
+- name: SonarQube - Configure SonarQube DB password
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.jdbc.password="
+    insertafter: "^#sonar.jdbc.password="
+    line: "sonar.jdbc.password=postgres_this_password_will_change"
+
+- name: SonarQube - Configure SonarQube DB connection string
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
+    insertafter: "^#sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
+    line: "sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
+
+- name: SonarQube - Configure SonarQube to run as the sonar user
+  lineinfile:
+    path: "/opt/sonarqube/bin/linux-x86-64/sonar.sh"
+    regexp: "RUN_AS_USER=sonar"
+    insertafter: "#RUN_AS_USER="
+    line: "RUN_AS_USER=sonar"
+
+- name: SonarQube - Get the sonarqube permissions right
+  shell: |
+    useradd sonar
+    chown -R sonar:sonar /opt/sonarqube
+  args:
+    warn: no
+
+- name: SonarQube - Copy the SonarQube service configuration file
+      copy:
+        src: "../../sonarqube.service"
+        dest: "/etc/systemd/system/sonarqube.service"
+
+- name: SonarQube - Enable and start the SonarQube service
+  shell: |
+    systemctl enable postgresql-15
+    systemctl start postgresql-15
+  args:
+    warn: no
+
+- name: Network - Add netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Network - Creating a file with content
+  copy:
+    dest: "/etc/modprobe.d/br_netfilter.conf"
+    content: |
+      br_netfilter
+
+- name: Network - Enable IP Forward
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Network - FirewallD rules
+  firewalld:
+    permanent: yes
+    immediate: yes
+    port: "{{item.port}}/{{item.proto}}"
+    state: "{{item.state}}"
+    zone: "{{item.zone}}"
+  with_items:
+    - {port: "3000", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "3001", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "3002", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "5000", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "5173", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "8080", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "9090", proto: "tcp", state: "enabled", zone: "public" }

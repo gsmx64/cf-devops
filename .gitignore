@@ -5,6 +5,10 @@
 *.tfstate
 *.tfstate.*
 
+# GCP credentials file
+*.json
+gcloud.json
+
 # Crash log files
 crash.log
 crash.*.log

@@ -1,0 +1,8 @@
+[main]
+main ansible_host=
+
+[master]
+k8s-master ansible_host=
+
+[workers]
+k8s-worker0 ansible_host=
