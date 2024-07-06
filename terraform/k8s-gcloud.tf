@@ -8,7 +8,7 @@ resource "google_compute_instance" "main" {
   machine_type              = "${var.main_instance_type}"
   zone                      = "${var.cluster_zone}"
   allow_stopping_for_update = true
-  tags                      = ["main","docker","jenkins"]
+  tags                      = ["main","docker","jenkins","sonarqube"]
 
   boot_disk {
     initialize_params {
@@ -24,7 +24,7 @@ resource "google_compute_instance" "main" {
   }
 
   metadata = {
-    ssh-keys = "thiago:${file("../thiago.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
   }
 
   service_account {
@@ -56,7 +56,7 @@ resource "google_compute_instance" "master" {
   }
 
   metadata = {
-    ssh-keys = "thiago:${file("../thiago.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
   }
 
   service_account {
@@ -90,7 +90,7 @@ resource "google_compute_instance" "workers" {
   }
 
   metadata = {
-    ssh-keys = "thiago:${file("../thiago.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
   }
 
   service_account {
