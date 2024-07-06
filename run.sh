@@ -25,14 +25,13 @@ run_terraform() {
     read -p ">>> Run Terraform or destroy? (y/n): " choice
     echo "---------------------------------------------------------------------"
     if [ "$choice" == "y" ]; then
-            terraform init
-            terraform plan
-            terraform validate
-            terraform apply
-            #terraform output
-        else
-            terraform destroy
-        fi
+        terraform init
+        terraform plan
+        terraform validate
+        terraform apply
+        #terraform output
+    else
+        terraform destroy
     fi
 }
 
