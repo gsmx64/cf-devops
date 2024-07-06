@@ -25,6 +25,7 @@ run_terraform() {
     read -p ">>> Run Terraform (r), destroy (d) or exit (e)?: " choice
     echo "---------------------------------------------------------------------"
     if [ "$choice" == "r" ]; then
+        cd $PWD/terraform
         terraform init
         terraform plan
         terraform validate

@@ -10,6 +10,6 @@ echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.clou
 sudo apt-get update && sudo apt-get install google-cloud-cli google-cloud-cli-terraform-validator kubectl
 echo " > Verifying the gcloud cli version."
 gcloud --version
-echo " > Init gcloud."
-gcloud init
+#echo " > Init gcloud."
+#gcloud init
 sleep 4
