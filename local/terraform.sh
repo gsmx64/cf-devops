@@ -15,10 +15,12 @@ sudo tee /etc/apt/sources.list.d/hashicorp.list
 sudo apt update && sudo apt install terraform
 
 if echo "$(lsb_release -r | awk '{print $2}')" | grep -q "23.04"; then
-   git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
-   echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bash_profile
-   ln -s ~/.tfenv/bin/* /usr/local/bin
-   tfenv install latest
+   sudo git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+   sudo echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bash_profile
+   sudo ln -s ~/.tfenv/bin/* /usr/local/bin
+   sudo tfenv install latest
+   sudo tfenv use latest
+   sudo ln -s /usr/local/bin/terraform  /usr/bin/terraform
 fi
 
 terraform --version

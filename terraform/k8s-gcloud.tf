@@ -24,7 +24,7 @@ resource "google_compute_instance" "main" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("${var.ssh_credentials}")}"
   }
 
   service_account {
@@ -56,7 +56,7 @@ resource "google_compute_instance" "master" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("${var.ssh_credentials}")}"
   }
 
   service_account {
@@ -90,7 +90,7 @@ resource "google_compute_instance" "workers" {
   }
 
   metadata = {
-    ssh-keys = "${var.ssh_username}:${file("../gcloud.pub")}"
+    ssh-keys = "${var.ssh_username}:${file("${var.ssh_credentials}")}"
   }
 
   service_account {

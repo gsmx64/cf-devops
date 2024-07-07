@@ -27,9 +27,15 @@ run_terraform() {
     if [ "$choice" == "r" ]; then
         cd $PWD/terraform
         terraform init
+        sleep 2
         terraform plan
+        sleep 2
         terraform validate
-        terraform apply
+        sleep 2
+        read -p ">>> Do Terraform apply? (y/n): " choice
+            if [ "$choice" == "y" ]; then
+            terraform apply
+        fi
         #terraform output
     elif [ "$choice" == "d" ]; then
         terraform destroy

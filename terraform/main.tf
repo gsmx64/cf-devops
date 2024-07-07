@@ -7,5 +7,5 @@ provider "google" {
   project = "${var.project_name}"
   region  = "${var.cluster_region}"
   zone    = "${var.cluster_zone}"
-  credentials = file("gcloud.json")
+  credentials = "${file("${var.gcloud_credentials}")}"
 }

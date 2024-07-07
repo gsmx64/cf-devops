@@ -38,9 +38,19 @@ variable "main_machine_image" {
   default = "rocky-linux-cloud/rocky-linux-8-optimized-gcp"
 }
 
+variable "gcloud_credentials" {
+  type    = string
+  default = "../gcloud.json"
+}
+
 variable "ssh_username" {
   type    = string
   default = "gsmcfdevops"
+}
+
+variable "ssh_credentials" {
+  type = string
+  default = "../gsmcfdevops.pub"
 }
 
 variable "prefix_netip" {

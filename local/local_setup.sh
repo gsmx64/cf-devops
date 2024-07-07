@@ -1,45 +1,72 @@
 #!/bin/bash
 
+echo " "
 echo "-------------------------------------------------"
 echo " > Installing GCP CLI"
 echo "-------------------------------------------------"
-echo " "
-$PWD/local/gcloud_cli.sh
+if [ "$(dpkg -l | awk '/google-cloud-cli/ {print }' | wc -l)" -ge 1 ]; then
+    echo " > GCP CLI already installed"
+else
+    $PWD/local/gcloud_cli.sh
+fi
 
+echo " "
 echo "-------------------------------------------------"
 echo " > Installing terraform"
 echo "-------------------------------------------------"
 echo " "
-$PWD/local/terraform.sh
+if [ -f "/usr/bin/terraform" ]; then 
+    echo " > Terraform already installed"
+else
+    $PWD/local/terraform.sh
+fi
 
+echo " "
 echo "-------------------------------------------------"
 echo " > Insert GCP Auth"
 echo "-------------------------------------------------"
-echo " "
+sleep 5
 sudo nano $PWD/gcloud.json
 
+echo " "
 echo "-------------------------------------------------"
 read -p " > Insert project name (Default: k8s-devops-cf): " pjname
 echo "-------------------------------------------------"
-echo " "
-sudo sed -i "s/$pjname/k8s-devops-cf/g" $PWD/terraform/variables.tf
+if [ -n "$pjname" ]; then
+    sudo sed -i "s/$pjname/k8s-devops-cf/g" $PWD/terraform/variables.tf
+fi
 
+echo " "
 echo "-------------------------------------------------"
 read -p " > Insert ssh username (Default: gsmcfdevops): " sshusername
 echo "-------------------------------------------------"
-echo " "
-sudo sed -i "s/$sshusername/gsmcfdevops/g" $PWD/terraform/variables.tf
+if [ -n "$sshusername" ]; then
+    sudo sed -i "s/$sshusername/gsmcfdevops/g" $PWD/terraform/variables.tf
+fi
 
+if [ ! -f "$PWD/$sshusername.pub" ]; then
+    echo " "
+    echo "-------------------------------------------------"
+    echo " > Create ssh keys: "
+    echo "-------------------------------------------------"
+    ssh-keygen -t rsa -b 4096 -f $sshusername
+fi
+
+echo " "
 echo "-------------------------------------------------"
 read -p " > Insert Postgres password: " pgpass
 echo "-------------------------------------------------"
-echo " "
-sudo sed -i "s/$pgpass/postgres_this_password_will_change/g" $PWD/ansible/roles/main/tasks/main.yml
+if [ -n "$pgpass" ]; then
+    sudo sed -i "s/$pgpass/postgres_this_password_will_change/g" $PWD/ansible/roles/main/tasks/main.yml
+fi
 
+echo " "
 echo "-------------------------------------------------"
 read -p " > Insert Grafana password: " grafanapass
 echo "-------------------------------------------------"
-sudo sed -i "s/$grafanapass/grafana_this_password_will_change/g" $PWD/ansible/roles/k8smaster/tasks/main.yml
+if [ -n "$grafanapass" ]; then
+    sudo sed -i "s/$grafanapass/grafana_this_password_will_change/g" $PWD/ansible/roles/k8smaster/tasks/main.yml
+fi
 
 echo " "
 echo " "
@@ -47,7 +74,7 @@ echo "-------------------------------------------------"
 echo " > Script completed!"
 echo "-------------------------------------------------"
 echo " > GCloud CLI Version: $(gcloud --version | awk '{print $4}')"
-echo " > Terraform Version: $(terraform --version | awk '{print $2}')"
+echo " > Terraform Version: $(terraform --version | awk '{print $2}' | tr --delete ' linux_amd64')"
 echo " "
 echo " > Project name: $pjname"
 echo " > SSH username: $sshusername"
