@@ -33,7 +33,7 @@ echo "-------------------------------------------------"
 read -p " > Insert project name (Default: k8s-devops-cf): " pjname
 echo "-------------------------------------------------"
 if [ -n "$pjname" ]; then
-    sudo sed -i "s/$pjname/k8s-devops-cf/g" $PWD/terraform/variables.tf
+    sudo sed -i "s/k8s-devops-cf/$pjname/g" $PWD/terraform/variables.tf
 fi
 
 echo " "
@@ -41,7 +41,7 @@ echo "-------------------------------------------------"
 read -p " > Insert ssh username (Default: gsmcfdevops): " sshusername
 echo "-------------------------------------------------"
 if [ -n "$sshusername" ]; then
-    sudo sed -i "s/$sshusername/gsmcfdevops/g" $PWD/terraform/variables.tf
+    sudo sed -i "s/gsmcfdevops/$sshusername/g" $PWD/terraform/variables.tf
 fi
 
 if [ ! -f "$PWD/$sshusername.pub" ]; then
@@ -57,7 +57,7 @@ echo "-------------------------------------------------"
 read -p " > Insert Postgres password: " pgpass
 echo "-------------------------------------------------"
 if [ -n "$pgpass" ]; then
-    sudo sed -i "s/$pgpass/postgres_this_password_will_change/g" $PWD/ansible/roles/main/tasks/main.yml
+    sudo sed -i "s/postgres_this_password_will_change/$pgpass/g" $PWD/ansible/roles/main/tasks/main.yml
 fi
 
 echo " "
@@ -65,7 +65,7 @@ echo "-------------------------------------------------"
 read -p " > Insert Grafana password: " grafanapass
 echo "-------------------------------------------------"
 if [ -n "$grafanapass" ]; then
-    sudo sed -i "s/$grafanapass/grafana_this_password_will_change/g" $PWD/ansible/roles/k8smaster/tasks/main.yml
+    sudo sed -i "s/grafana_this_password_will_change/$grafanapass/g" $PWD/ansible/roles/k8smaster/tasks/main.yml
 fi
 
 echo " "
