@@ -118,8 +118,6 @@
   shell: |
     helm repo add bitnami https://charts.bitnami.com/bitnami
     helm repo update
-  args:
-    warn: no
 
 - name: Kubeadm apply network plugin calico
   shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
@@ -144,8 +142,6 @@
     --namespace monitoring \
     --set alertmanager.persistentVolume.storageClass="pd.csi.storage.gke.io" \
     --set server.persistentVolume.storageClass="pd.csi.storage.gke.io"
-  args:
-    warn: no
   notify:
   - Restart kubelet
 
@@ -158,8 +154,6 @@
     --set persistence.enabled=true \
     --set adminPassword=grafana_this_password_will_change
 
-  args:
-    warn: no
   notify:
   - Restart kubelet
 

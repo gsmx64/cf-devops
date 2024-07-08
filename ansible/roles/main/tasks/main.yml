@@ -35,8 +35,6 @@
   shell: |
     dnf install -y yum-utils
     yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-  args:
-    warn: no
 
 - name: Docker Engine - Install the latest version of Docker Engine and containerd
   dnf:
@@ -63,14 +61,10 @@
     yum-config-manager --add-repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
     rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
     yum upgrade
-  args:
-    warn: no
 
 - name: Jenkins - Install Jenkins required system packages
   shell: |
     yum install fontconfig java-17-openjdk
-  args:
-    warn: no
 
 - name: Jenkins - Install Jenkins
   shell: |
@@ -78,15 +72,11 @@
     systemctl daemon-reload
     systemctl enable jenkins
     systemctl start jenkins
-  args:
-    warn: no
 
 - name: PostgreSQL 15 for SonarQube - Add Repository
   shell: |
     yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y
     dnf update -y
-  args:
-    warn: no
 
 - name: PostgreSQL 15 for SonarQube - Install PostgreSQL 15
   shell: |
@@ -94,8 +84,6 @@
     /usr/pgsql-15/bin/postgresql-15-setup initdb
     systemctl enable postgresql-15
     systemctl start postgresql-15
-  args:
-    warn: no
 
 - name: PostgreSQL 15 for SonarQube - Create DBA user
   become: yes
@@ -126,8 +114,6 @@
     sysctl fs.file-max
     ulimit -n
     ulimit -u
-  args:
-    warn: no
 
 - name: SonarQube - Create the sonar user for running the SonarQube services
   user:
@@ -185,8 +171,6 @@
   shell: |
     useradd sonar
     chown -R sonar:sonar /opt/sonarqube
-  args:
-    warn: no
 
 - name: SonarQube - Copy the SonarQube service configuration file
   copy:
@@ -197,8 +181,6 @@
   shell: |
     systemctl enable postgresql-15
     systemctl start postgresql-15
-  args:
-    warn: no
 
 - name: Network - Add netfilter module
   modprobe:
