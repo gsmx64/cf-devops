@@ -6,3 +6,5 @@ k8s-master ansible_host=
 
 [workers]
 k8s-worker0 ansible_host=
+k8s-worker1 ansible_host=
+k8s-worker2 ansible_host=

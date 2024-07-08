@@ -4,11 +4,11 @@
 #
 
 resource "google_compute_instance" "main" {
-  name                      = "main"
+  name                      = "main1"
   machine_type              = "${var.main_instance_type}"
   zone                      = "${var.cluster_zone}"
   allow_stopping_for_update = true
-  tags                      = ["main","docker","jenkins","sonarqube"]
+  tags                      = ["main","docker","jenkins","sonarqube", "ssh-enabled"]
 
   boot_disk {
     initialize_params {
@@ -40,7 +40,7 @@ resource "google_compute_instance" "master" {
   machine_type              = "${var.cluster_instance_type}"
   zone                      = "${var.cluster_zone}"
   allow_stopping_for_update = true
-  tags                      = ["k8s-cluster","master-node","controller"]
+  tags                      = ["k8s-cluster","master-node","controller", "ssh-enabled"]
 
   boot_disk {
     initialize_params {
@@ -74,7 +74,7 @@ resource "google_compute_instance" "workers" {
   allow_stopping_for_update = true
   count = var.k8s_workers
 
-  tags = ["k8s-cluster","master-node","controller"]
+  tags = ["k8s-cluster","master-node","controller", "ssh-enabled"]
 
   boot_disk {
     initialize_params {

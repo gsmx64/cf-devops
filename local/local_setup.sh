@@ -14,11 +14,20 @@ echo " "
 echo "-------------------------------------------------"
 echo " > Installing terraform"
 echo "-------------------------------------------------"
-echo " "
 if [ -f "/usr/bin/terraform" ]; then 
     echo " > Terraform already installed"
 else
     $PWD/local/terraform.sh
+fi
+
+echo " "
+echo "-------------------------------------------------"
+echo " > Installing Ansible"
+echo "-------------------------------------------------"
+if [ "$(dpkg -l | awk '/ansible/ {print }' | wc -l)" -ge 1 ]; then 
+    echo " > Ansible already installed"
+else
+    $PWD/local/ansible.sh
 fi
 
 echo " "
@@ -52,6 +61,9 @@ if [ ! -f "$PWD/$sshusername.pub" ]; then
     ssh-keygen -t rsa -b 4096 -f $sshusername
 fi
 
+sudo chmod 400 $sshusername
+sudo chmod 400 $sshusername.pub
+
 echo " "
 echo "-------------------------------------------------"
 read -p " > Insert Postgres password: " pgpass
@@ -75,6 +87,7 @@ echo " > Script completed!"
 echo "-------------------------------------------------"
 echo " > GCloud CLI Version: $(gcloud --version | awk '{print $4}')"
 echo " > Terraform Version: $(terraform --version | awk '{print $2}' | tr --delete ' linux_amd64')"
+echo " > Ansible Version: $(ansible --version | awk '{print $2}' | tr --delete ' linux_amd64')"
 echo " "
 echo " > Project name: $pjname"
 echo " > SSH username: $sshusername"

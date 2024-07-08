@@ -10,15 +10,15 @@ resource "null_resource" "ansible_run" {
       host        = google_compute_instance.master.network_interface[0].access_config[0].nat_ip
       type        = "ssh"
       user        = "${var.ssh_username}"
-      #private_key = file(var.pvt_key)
+      private_key = "${file("${var.ssh_credentials_private}")}"
     }
   }
 
-  provisioner "local-exec" {
-    command = "terraform-ansible-inventory --file terraform.tfstate"
+  /*provisioner "local-exec" {
+    command = "./terraform-ansible-inventory --input 'terraform.tfstate' --output ../ansible/inventory"
   }
 
   provisioner "local-exec" {
     command = "ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ../ansible/inventory -v ../ansible/k8scluster.yml"
-  }
+  }*/
 }

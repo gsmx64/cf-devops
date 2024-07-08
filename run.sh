@@ -54,8 +54,10 @@ sleep 2
 
 # Cleanup execution enable
 chmod +x $PWD/local/local_setup.sh
+chmod +x $PWD/local/ansible.sh
 chmod +x $PWD/local/gcloud_cli.sh
 chmod +x $PWD/local/terraform.sh
+chmod +x $PWD/bin/terraform-ansible-inventory
 
 # Check if the script is running as root
 check_root
@@ -65,6 +67,12 @@ $PWD/local/local_setup.sh
 
 # Run Terraform
 run_terraform
+
+# Run Script for Ansible Inventory
+./terraform-ansible-inventory --input 'terraform.tfstate' --output ../ansible/inventory
+
+# Run Ansible Playbook
+export ANSIBLE_HOST_KEY_CHECKING=False && sudo ansible-playbook --inventory-file ../ansible/inventory -v ../ansible/k8scluster.yml --private-key ../gsmcfdevops --key-file ../gsmcfdevops.pub --user gsmcfdevops
 
 echo " "
 echo "-------------------------------------------------"

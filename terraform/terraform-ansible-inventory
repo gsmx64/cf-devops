@@ -22,7 +22,7 @@ inventory = ConfigParser()
 if args.output:
     ansible_inventory=args.output
 
-os.system(f'terraform show -json {args.input}| jq > jq.json')
+os.system(f'terraform show -json {args.input} | jq > jq.json')
 
 with open('jq.json', "r") as f:
     data = json.load(f)

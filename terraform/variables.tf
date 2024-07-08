@@ -53,6 +53,11 @@ variable "ssh_credentials" {
   default = "../gsmcfdevops.pub"
 }
 
+variable "ssh_credentials_private" {
+  type = string
+  default = "../gsmcfdevops"
+}
+
 variable "prefix_netip" {
   type = string
   default = "192.168.87"
