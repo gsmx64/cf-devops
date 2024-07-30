@@ -44,6 +44,25 @@ http:
       tls:
         options: default
 
+    cf-blog-fe:
+      rule: "Host(`cf-blog.line.pm`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: cf-blog-fe-service
+      tls:
+        options: default
+    cf-blog-be:
+      rule: "Host(`cf-blog.line.pm`) && PathPrefix(`/api`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: cf-blog-be-service
+      tls:
+        options: default
+
   middlewares:
     cors:
       headers:
@@ -83,6 +102,17 @@ http:
         servers:
         - url: "http://192.168.87.10:30005/items"
 
+    cf-blog-fe-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30006"
+    cf-blog-be-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30007/api"
+
 tls:
   stores:
     default: {}
@@ -98,6 +128,10 @@ tls:
       - default
   - certFile: /etc/ssl/certs/todo-list-devops.line.pm.crt
     keyFile: /etc/ssl/certs/todo-list-devops.line.pm.key
+    stores:
+      - default
+  - certFile: /etc/ssl/certs/cf-blog.line.pm.crt
+    keyFile: /etc/ssl/certs/cf-blog.line.pm.key
     stores:
       - default
 
