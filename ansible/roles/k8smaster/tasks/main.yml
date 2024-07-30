@@ -8,6 +8,19 @@
     update_only: yes
   register: yum_update_status
 
+- name: Install required system packages
+  dnf:
+    name:
+      - jq
+      - curl
+      - wget
+      - nano
+      - unzip
+      - git
+      - tar
+    state: latest
+    update_cache: true
+
 - name: Add docker repository
   shell:
     cmd: |
@@ -19,11 +32,11 @@
       cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
       [kubernetes]
       name=Kubernetes
-      baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+      baseurl=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/
       enabled=1
       gpgcheck=1
       repo_gpgcheck=1
-      gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+      gpgkey=https://pkgs.k8s.io/core:/stable:/v1.29/rpm/repodata/repomd.xml.key
       exclude=kubelet kubeadm kubectl
       EOF
 
@@ -102,6 +115,41 @@
     dest: /root/.kube/config
     remote_src: true
 
+- name: Export KUBECONFIG
+  shell: export KUBECONFIG=/etc/kubernetes/admin.conf
+  notify:
+  - Restart kubelet
+
+- name: Kubeadm apply network plugin calico
+  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+  notify:
+  - Restart kubelet
+
+- name: Install ingress-nginx
+  shell: kubectl apply -f kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.1/deploy/static/provider/baremetal/deploy.yaml
+  notify:
+  - Restart kubelet
+
+- name: Change config of kube-proxy to strictARP (Required for MetalLB)
+  shell: |
+    kubectl get configmap kube-proxy -n kube-system -o yaml | \
+    sed -e "s/strictARP: false/strictARP: true/" | \
+    kubectl apply -f - -n kube-system
+  notify:
+  - Restart kubelet
+
+- name: Install MetalLB
+  shell: |
+    kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.7/config/manifests/metallb-native.yaml
+  notify:
+  - Restart kubelet
+
+- name: Install Jenkins Agent required system packages
+  dnf:
+    name:
+      - fontconfig
+      - java-17-openjdk
+
 - name: Helm - Install helm if not exists
   unarchive:
     src: https://get.helm.sh/helm-v3.15.2-linux-amd64.tar.gz
@@ -114,25 +162,36 @@
   args:
     creates: /usr/local/bin/helm
 
+- name: Helm - Add helm to path to run with sudo
+  shell: |
+    cp /usr/local/bin/helm /bin/helm
+
 - name: Helm - Add Artifact Hub for helm chart Repositories
   shell: |
     helm repo add bitnami https://charts.bitnami.com/bitnami
     helm repo update
 
-- name: Kubeadm apply network plugin calico
-  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-  notify:
-  - Restart kubelet
+- name: Helm - Add OpenEBS helm repository
+  shell: |
+    helm repo add openebs https://openebs.github.io/openebs
+    helm repo update
 
-- name: Kubeadm apply network plugin calico
-  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-  notify:
-  - Restart kubelet
+- name: Helm - Install OpenEBS with out Replicated Storage
+  shell: |
+    helm install openebs --namespace openebs openebs/openebs --set engines.replicated.mayastor.enabled=false --create-namespace
 
-- name: Kubeadm apply network plugin calico
-  shell: kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
-  notify:
-  - Restart kubelet
+- name: Helm - Add Cert-Manager helm repository
+  shell: |
+    helm repo add jetstack https://charts.jetstack.io --force-update
+
+- name: Helm - Install Cert-Manager
+  shell: |
+    helm install \
+      cert-manager jetstack/cert-manager \
+      --namespace cert-manager \
+      --create-namespace \
+      --version v1.15.1 \
+      --set crds.enabled=true
 
 - name: Monitoring - Add Prometheus Helm Repository
   shell: |
@@ -140,8 +199,8 @@
     kubectl create namespace monitoring
     helm install prometheus prometheus-community/prometheus \
     --namespace monitoring \
-    --set alertmanager.persistentVolume.storageClass="pd.csi.storage.gke.io" \
-    --set server.persistentVolume.storageClass="pd.csi.storage.gke.io"
+    --set alertmanager.persistentVolume.storageClass="openebs-hostpath" \
+    --set server.persistentVolume.storageClass="openebs-hostpath"
   notify:
   - Restart kubelet
 
@@ -150,10 +209,9 @@
     helm repo add grafana https://grafana.github.io/helm-charts
     helm install grafana grafana/grafana \
     --namespace monitoring \
-    --set persistence.storageClassName="gp2" \
+    --set persistence.storageClassName="openebs-hostpath" \
     --set persistence.enabled=true \
     --set adminPassword=grafana_this_password_will_change
-
   notify:
   - Restart kubelet
 
@@ -165,10 +223,12 @@
     state: "{{item.state}}"
     zone: "{{item.zone}}"
   with_items:
+    - {port: "80", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "443", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "2222", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "6443", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "2379-2380", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "10250", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "10259", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "10257", proto: "tcp", state: "enabled", zone: "public" }
-    - {port: "8080", proto: "tcp", state: "enabled", zone: "public" }
-    - {port: "8081", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "8443", proto: "tcp", state: "enabled", zone: "public" }

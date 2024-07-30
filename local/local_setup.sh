@@ -74,6 +74,14 @@ fi
 
 echo " "
 echo "-------------------------------------------------"
+read -p " > Insert Sonarqube password: " sonarpass
+echo "-------------------------------------------------"
+if [ -n "$sonarpass" ]; then
+    sudo sed -i "s/sonar_this_password_will_change/$sonarpass/g" $PWD/ansible/roles/main/tasks/main.yml
+fi
+
+echo " "
+echo "-------------------------------------------------"
 read -p " > Insert Grafana password: " grafanapass
 echo "-------------------------------------------------"
 if [ -n "$grafanapass" ]; then
@@ -91,7 +99,8 @@ echo " > Ansible Version: $(ansible --version | awk '{print $2}' | tr --delete '
 echo " "
 echo " > Project name: $pjname"
 echo " > SSH username: $sshusername"
-echo " > Postgres password: $pgpass"
+echo " > Postgres dba password: $pgpass"
+echo " > Sonarqube password: $sonarpass"
 echo " > Grafana password: $grafanapass"
 echo "-------------------------------------------------"
 echo " "

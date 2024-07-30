@@ -1,0 +1,103 @@
+################################################################
+#
+# Traefik provider - avatares-devops
+#
+################################################################
+http:
+  routers:
+    # Define a connection between requests and services
+    avatares-devops-web:
+      rule: "Host(`avatares-devops.line.pm`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: avatares-devops-web-service
+      tls:
+        options: default
+    avatares-devops-api:
+      rule: "Host(`avatares-devops.line.pm`) && PathPrefix(`/api/avatar`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: avatares-devops-api-service
+      tls:
+        options: default
+
+    todo-list-devops-fe:
+      rule: "Host(`todo-list-devops.line.pm`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: todo-list-devops-fe-service
+      tls:
+        options: default
+    todo-list-devops-be:
+      rule: "Host(`todo-list-devops.line.pm`) && PathPrefix(`/items`)"
+      entryPoints:
+        - "websecure"
+      middlewares:
+        - "cors"
+      service: todo-list-devops-be-service
+      tls:
+        options: default
+
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowMethods:
+          - "GET"
+          - "OPTIONS"
+          - "PUT"
+          - "POST"
+          - "DELETE"
+          - "PATCH"
+        accessControlAllowHeaders: "*"
+        accessControlAllowOriginList: "*"
+        accessControlMaxAge: 100
+        addVaryHeader: true
+
+  services:
+    # Define how to reach an existing service on our infrastructure
+    avatares-devops-web-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30003"
+    avatares-devops-api-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30004/api/avatar"
+
+    todo-list-devops-fe-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30005"
+    todo-list-devops-be-service:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+        - url: "http://192.168.87.10:30005/items"
+
+tls:
+  stores:
+    default: {}
+
+  options:
+    default:
+      minVersion: VersionTLS12
+
+  certificates:
+  - certFile: /etc/ssl/certs/avatares-devops.line.pm.crt
+    keyFile: /etc/ssl/certs/avatares-devops.line.pm.key
+    stores:
+      - default
+  - certFile: /etc/ssl/certs/todo-list-devops.line.pm.crt
+    keyFile: /etc/ssl/certs/todo-list-devops.line.pm.key
+    stores:
+      - default
+

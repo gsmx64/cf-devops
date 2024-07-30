@@ -12,12 +12,37 @@
   dnf:
     name:
       - ca-certificates
+      - openssl
+      - openssl-devel
       - curl
       - wget
       - nano
       - unzip
+      - python3-psycopg2
+      - git
+      - python3.11
+      - python3.11-pip
+      - gcc
+      - openssl-devel
+      - bzip2-devel
+      - libffi-devel
+      - zlib-devel
+      - tar
+      - jq
+      - make
     state: latest
     update_cache: true
+
+- name: Python - Install Python3.10
+  shell: |
+    cd /tmp
+    wget https://www.python.org/ftp/python/3.10.14/Python-3.10.14.tar.xz
+    tar -xf Python-3.10.14.tar.xz -C /opt/
+    cd /opt/Python-3.10.14
+    ./configure --enable-optimizations
+    make -j 2
+    make altinstall
+    rm -Rf /tmp/Python-3.10.14.tar.xz
 
 - name: Docker Engine - Uninstall old versions
   dnf:
@@ -63,57 +88,148 @@
     yum upgrade
 
 - name: Jenkins - Install Jenkins required system packages
-  shell: |
-    yum install fontconfig java-17-openjdk
+  dnf:
+    name:
+      - fontconfig
+      - java-17-openjdk
 
 - name: Jenkins - Install Jenkins
+  dnf:
+    name:
+      - jenkins
+
+- name: Jenkins - Add the jenkins user to the docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
+
+- name: Jenkins - Configure Start of Jenkins
+  become: yes
   shell: |
-    yum install jenkins
     systemctl daemon-reload
     systemctl enable jenkins
     systemctl start jenkins
 
-- name: PostgreSQL 15 for SonarQube - Add Repository
+#- name: Jenkins - Install Jenkins Plugins
+#  become: yes
+#  shell: |
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin locale:519.v4e20f313cfa_f
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin docker-plugin:1.6.2
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin prometheus:773.v3b_62d8178eec
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin sonar:2.17.2
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin dependency-check-jenkins-plugin:5.5.1
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin nodejs:1.6.1
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin envinject:2.908.v66a_774b_31d93
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin kubernetes:4253.v7700d91739e5
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password install-plugin kubernetes-cli:1.12.1
+#    java -jar jenkins-cli.jar -s http://localhost:8080/ -auth gsmcfdevops:jenkins_password safe-restart
+
+- name: PostgreSQL 15 - Add Repository
   shell: |
-    yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y
+    yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y
     dnf update -y
 
-- name: PostgreSQL 15 for SonarQube - Install PostgreSQL 15
+- name: PostgreSQL 15 - Install PostgreSQL 15
   shell: |
+    dnf module disable postgresql
     dnf install -y postgresql15-server
-    /usr/pgsql-15/bin/postgresql-15-setup initdb
+    dnf install -y postgresql15-contrib
+
+- name: PostgreSQL 15 - Enable the PostgreSQL service
+  shell: |
     systemctl enable postgresql-15
+
+- name: PostgreSQL 15 - Start the PostgreSQL service
+  shell: |
     systemctl start postgresql-15
 
-- name: PostgreSQL 15 for SonarQube - Create DBA user
+#- name: PostgreSQL 15 for SonarQube - Init PostgreSQL DB
+#  become: yes
+#  shell: |
+#    rm -rf /var/lib/pgsql/15/data
+#    /usr/pgsql-15/bin/postgresql-15-setup initdb
+#    chown -R postgres:postgres /var/lib/pgsql/15/data
+
+- name: PostgreSQL 15 - Create DBA user
   become: yes
   become_user: postgres
-  postgresql_user:
-    name: dba
+  community.postgresql.postgresql_user:
+    user: dba
+    password: postgres_this_password_will_change
     db: postgres
-    password: "postgres_this_password_will_change"
-    priv: "ALL"
+    login_host: 127.0.0.1
+    login_user: postgres
+    login_password: postgres_this_password_will_change
 
-- name: PostgreSQL 15 for SonarQube - Configure pg_hba.conf to enable MD5
-  become: yes
-  become_user: postgres
-  blockinfile:
-    dest: "/var/lib/pgsql/14/data/pg_hba.conf"
-    insertafter: "# TYPE  DATABASE        USER            ADDRESS                 METHOD"
-    block: |
-      local   all             dba                 trust
+#- name: PostgreSQL 15 - Grant Privileges to the dba user
+#  community.postgresql.postgresql_privs:
+#    db: postgres
+#    privs: ALL
+#    schema: public
+#    role: PUBLIC
+#    login_host: 127.0.0.1
+#    login_user: postgres
+#    login_password: postgres_this_password_will_change
 
-- name: PostgreSQL 15 for SonarQube - Reload configuration
+#- name: PostgreSQL 15 - Configure pg_hba.conf to enable MD5
+#  copy:
+#    src: "../../pg_hba.conf"
+#    dest: "/var/lib/pgsql/15/data/pg_hba.conf"
+
+- name: PostgreSQL 15 - Reload configuration
   become: yes
   become_user: postgres
   shell: /usr/pgsql-15/bin/pg_ctl reload -D /var/lib/pgsql/15/data
 
+- name: MySQL 8.0 - Enable module and install MySQL 8.0
+  shell: |
+    sudo dnf module enable mysql:8.0
+    sudo dnf install @mysql
+
+- name: MySQL 8.0 - Enable and start the MySQL service
+  shell: |
+    sudo systemctl enable mysqld
+    sudo systemctl start mysqld
+
+#- name: MySQL 8.0 - Secure the MySQL installation
+#  shell: |
+#    sudo mysql_secure_installation
+
+- name: SonarQube - Create a new database for Sonarqube
+  community.postgresql.postgresql_db:
+    name: sonar
+    login_host: 127.0.0.1
+    login_user: postgres
+    login_password: postgres_this_password_will_change
+
+- name: SonarQube - Create user's password with no expire date
+  community.postgresql.postgresql_user:
+    db: sonar
+    user: sonar
+    password: sonar_this_password_will_change
+    expires: infinity
+    login_host: 127.0.0.1
+    login_user: postgres
+    login_password: postgres_this_password_will_change
+
+- name: SonarQube - Grant Privileges to the sonar user
+  community.postgresql.postgresql_privs:
+    db: sonar
+    privs: ALL
+    type: database
+    role: pg_database_owner
+    login_host: 127.0.0.1
+    login_user: postgres
+    login_password: postgres_this_password_will_change
+
 - name: SonarQube - Add system requirements
   shell: |
-    sysctl vm.max_map_count
-    sysctl fs.file-max
-    ulimit -n
-    ulimit -u
+    
+    sysctl -w vm.max_map_count=524288
+    sysctl -w fs.file-max=131072
+    ulimit -n 131072
+    ulimit -u 8192
 
 - name: SonarQube - Create the sonar user for running the SonarQube services
   user:
@@ -139,26 +255,72 @@
     state: link
     owner: sonar
 
+- name: SonarQube - Clean zip file
+  shell: |
+    rm -rf /opt/sonarqube-9.9.6.92038.zip
+
 - name: SonarQube - Configure SonarQube DB username
   lineinfile:
     path: "/opt/sonarqube/conf/sonar.properties"
     regexp: "^sonar.jdbc.username="
     insertafter: "^#sonar.jdbc.username="
-    line: "sonar.jdbc.username=postgres"
+    line: "sonar.jdbc.username=sonar"
 
 - name: SonarQube - Configure SonarQube DB password
   lineinfile:
     path: "/opt/sonarqube/conf/sonar.properties"
     regexp: "^sonar.jdbc.password="
     insertafter: "^#sonar.jdbc.password="
-    line: "sonar.jdbc.password=postgres_this_password_will_change"
+    line: "sonar.jdbc.password=sonar_this_password_will_change"
 
 - name: SonarQube - Configure SonarQube DB connection string
   lineinfile:
     path: "/opt/sonarqube/conf/sonar.properties"
     regexp: "sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
     insertafter: "^#sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
-    line: "sonar.jdbc.url=jdbc:postgresql://localhost/sonar"
+    line: "sonar.jdbc.url=jdbc:postgresql://localhost:5432/sonar"
+
+- name: SonarQube - Configure SonarQube Port 9000
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.web.port=9000"
+    insertafter: "^#sonar.web.port=9000"
+    line: "sonar.web.port=9000"
+
+- name: SonarQube - Configure SonarQube Port 9001
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.search.port=9001"
+    insertafter: "^#sonar.search.port=9001"
+    line: "sonar.search.port=9001"
+
+- name: SonarQube - Configure SonarQube access from all internals ip
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.web.host=0.0.0.0"
+    insertafter: "^#sonar.web.host=0.0.0.0"
+    line: "sonar.web.host=0.0.0.0"
+
+- name: SonarQube - Configure data directory
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.path.data=/data"
+    insertafter: "^#sonar.path.data=/data"
+    line: "sonar.path.data=/opt/sonarqube/data"
+
+- name: SonarQube - Configure temp directory
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.path.temp=/temp"
+    insertafter: "^#sonar.path.temp=/temp"
+    line: "sonar.path.temp=/opt/sonarqube/temp"
+
+- name: SonarQube - Configure JVM options of ElasticSearch proccess
+  lineinfile:
+    path: "/opt/sonarqube/conf/sonar.properties"
+    regexp: "^sonar.search.javaOpts=-Xmx512m -Xms512m -XX:MaxDirectMemorySize=256m -XX:+HeapDumpOnOutOfMemoryError"
+    insertafter: "^#sonar.search.javaOpts=-Xmx512m -Xms512m -XX:MaxDirectMemorySize=256m -XX:+HeapDumpOnOutOfMemoryError"
+    line: "sonar.search.javaOpts=-Xmx512m -Xms512m -XX:MaxDirectMemorySize=256m -XX:+HeapDumpOnOutOfMemoryError"
 
 - name: SonarQube - Configure SonarQube to run as the sonar user
   lineinfile:
@@ -174,13 +336,139 @@
 
 - name: SonarQube - Copy the SonarQube service configuration file
   copy:
-    src: "../../sonarqube.service"
+    src: "../../sonarqube/sonarqube.service"
     dest: "/etc/systemd/system/sonarqube.service"
 
 - name: SonarQube - Enable and start the SonarQube service
   shell: |
-    systemctl enable postgresql-15
-    systemctl start postgresql-15
+    systemctl daemon-reload
+    systemctl enable sonarqube
+    systemctl start sonarqube
+
+- name: Trivy - Install Trivy
+  shell:
+    cmd: |
+      RELEASE_VERSION=$(grep -Po '(?<=VERSION_ID=")[0-9]' /etc/os-release)
+      cat << EOF | sudo tee -a /etc/yum.repos.d/trivy.repo
+      [trivy]
+      name=Trivy repository
+      baseurl=https://aquasecurity.github.io/trivy-repo/rpm/releases/$RELEASE_VERSION/\$basearch/
+      gpgcheck=1
+      enabled=1
+      gpgkey=https://aquasecurity.github.io/trivy-repo/rpm/public.key
+      EOF
+      sudo yum -y update
+      sudo yum -y install trivy
+
+- name: DependencyCheck - Download DependencyCheck
+  get_url:
+    url: "https://github.com/jeremylong/DependencyCheck/releases/download/v10.0.2/dependency-check-10.0.2-release.zip"
+    dest: "/opt/dependency-check-10.0.2-release.zip"
+
+- name: DependencyCheck - Extract DependencyCheck
+  unarchive:
+    src: "/opt/dependency-check-10.0.2-release.zip"
+    dest: "/opt"
+    copy: no
+    owner: jenkins
+
+- name: DependencyCheck - Link this version of DependencyCheck
+  file:
+    src: "/opt/dependency-check-10.0.2-release"
+    dest: "/opt/dependency-check"
+    state: link
+    owner: jenkins
+
+- name: DependencyCheck - Clean zip file
+  shell: |
+    rm -rf /opt/dependency-check-10.0.2-release.zip
+
+- name: SonarQube - Add system requirements
+  shell: |
+    sudo chown -R jenkins:jenkins /opt/dependency-check/
+
+- name: Sonar Scanner CLI - Download Sonar Scanner CLI
+  get_url:
+    url: "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-6.1.0.4477-linux-x64.zip"
+    dest: "/opt/sonar-scanner-cli-6.1.0.4477-linux-x64.zip"
+
+- name: Sonar Scanner CLI - Extract Sonar Scanner CLI
+  unarchive:
+    src: "/opt/sonar-scanner-cli-6.1.0.4477-linux-x64.zip"
+    dest: "/opt"
+    copy: no
+    owner: jenkins
+
+- name: Sonar Scanner CLI - Link this version of Sonar Scanner CLI
+  file:
+    src: "/opt/sonar-scanner-cli-6.1.0.4477-linux-x64"
+    dest: "/opt/sonar-scanner-cli"
+    state: link
+    owner: jenkins
+
+- name: Sonar Scanner CLI - Clean zip file
+  shell: |
+    rm -rf /opt/sonar-scanner-cli-6.1.0.4477-linux-x64.zip
+
+- name: Traefik - Create the traefik user for running the Traefik services
+  user:
+    name: traefik
+    comment: System user for running Traefik
+
+- name: Traefik - Download Traefik
+  get_url:
+    url: "https://github.com/traefik/traefik/releases/download/v3.1.0/traefik_v3.1.0_linux_amd64.tar.gz"
+    dest: "/opt/traefik_v3.1.0_linux_amd64.tar.gz"
+
+- name: Traefik - Create Traefik user
+  shell: |
+    mkdir /var/lib/traefik && mkdir /opt/traefik/logs
+    groupadd -g 321 traefik
+    useradd -g traefik --no-user-group --home-dir /var/lib/traefik --no-create-home --shell /usr/sbin/nologin --system --uid 321 traefik
+    chown -R traefik:traefik /var/lib/traefik
+
+- name: Traefik - Extract Traefik
+  unarchive:
+    src: "/opt/traefik_v3.1.0_linux_amd64.tar.gz"
+    dest: "/opt/traefik/traefik"
+    copy: no
+    owner: traefik
+
+- name: Traefik - Clean zip file
+  shell: |
+    rm -rf /opt/traefik_v3.1.0_linux_amd64.tar.gz
+
+- name: Traefik - Give the traefik binary the ability to bind to privileged ports as a non-root user
+  shell: |
+    sudo setcap 'cap_net_bind_service=+ep' /opt/traefik/traefik
+
+- name: Traefik - Get the Traefik permissions right
+  shell: |
+    chown -R traefik:traefik /opt/traefik
+    chmod 755 -R /opt/traefik & chmod 644 /opt/traefik/traefik && chmod +x /opt/traefik/traefik
+    mkdir /etc/traefik && mkdir /etc/traefik/acme
+    chown -R traefik:traefik /etc/traefik
+
+- name: Traefik - Copy the Traefik service configuration file
+  copy:
+    src: "../../traefik/traefik.service"
+    dest: "/etc/systemd/system/traefik.service"
+
+- name: Traefik - Copy the Traefik configuration file
+  copy:
+    src: "../../traefik/traefik.yml"
+    dest: "/etc/traefik/traefik.yml"
+
+- name: Traefik - Copy the Traefik providers file
+  copy:
+    src: "../../traefik/providers.yml"
+    dest: "/etc/traefik/providers.yml"
+
+- name: Traefik - Enable and start the Traefik service
+  shell: |
+    systemctl daemon-reload
+    systemctl enable traefik
+    systemctl start traefik
 
 - name: Network - Add netfilter module
   modprobe:
@@ -209,10 +497,11 @@
     state: "{{item.state}}"
     zone: "{{item.zone}}"
   with_items:
+    - {port: "2222", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "3000", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "3001", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "3002", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "5000", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "5173", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "8080", proto: "tcp", state: "enabled", zone: "public" }
-    - {port: "9090", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "9000", proto: "tcp", state: "enabled", zone: "public" }

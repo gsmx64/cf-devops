@@ -72,7 +72,7 @@ run_terraform
 ./terraform-ansible-inventory --input 'terraform.tfstate' --output ../ansible/inventory
 
 # Run Ansible Playbook
-export ANSIBLE_HOST_KEY_CHECKING=False && sudo ansible-playbook --inventory-file ../ansible/inventory -v ../ansible/k8scluster.yml --private-key ../gsmcfdevops --key-file ../gsmcfdevops.pub --user gsmcfdevops
+export ANSIBLE_HOST_KEY_CHECKING=False && export DEFAULT_KEEP_REMOTE_FILES=yes && sudo ansible-playbook --inventory-file ../ansible/inventory -vvv ../ansible/k8scluster.yml --private-key ../gsmcfdevops --key-file ../gsmcfdevops.pub --user gsmcfdevops
 
 echo " "
 echo "-------------------------------------------------"

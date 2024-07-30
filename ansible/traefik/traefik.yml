@@ -1,0 +1,142 @@
+################################################################
+#
+# Configuration sample for Traefik v2.
+#
+# For Traefik v1: https://github.com/traefik/traefik/blob/v1.7/traefik.sample.toml
+#
+################################################################
+
+################################################################
+# Global configuration
+################################################################
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+################################################################
+# EntryPoints configuration
+################################################################
+
+# EntryPoints definition
+#
+# Optional
+#
+entryPoints:
+  traefik:
+    address: :8081
+
+  web:
+    address: :80
+
+  websecure:
+    address: :443
+
+################################################################
+# Providers configuration
+################################################################
+
+# Providers definition
+#
+# Optional
+#
+providers:
+  providersThrottleDuration: 2s
+
+  # File provider for connecting things that are outside of docker / defining middleware
+  file:
+    filename: /etc/traefik/providers.yml
+    watch: true
+
+################################################################
+# Traefik logs configuration
+################################################################
+
+# Traefik logs
+# Enabled by default and log to stdout
+#
+# Optional
+#
+log:
+  # Log level
+  #
+  # Optional
+  # Default: "ERROR"
+  #
+  level: DEBUG
+
+  # Sets the filepath for the traefik log. If not specified, stdout will be used.
+  # Intermediate directories are created if necessary.
+  #
+  # Optional
+  # Default: os.Stdout
+  #
+  filePath: /opt/traefik/logs/traefik.log
+
+  # Format is either "json" or "common".
+  #
+  # Optional
+  # Default: "common"
+  #
+  format: common
+
+################################################################
+# Access logs configuration
+################################################################
+
+# Enable access logs
+# By default it will write to stdout and produce logs in the textual
+# Common Log Format (CLF), extended with additional fields.
+#
+# Optional
+#
+accessLog:
+  # Sets the file path for the access log. If not specified, stdout will be used.
+  # Intermediate directories are created if necessary.
+  #
+  # Optional
+  # Default: os.Stdout
+  #
+  filePath: /opt/traefik/logs/access.log
+
+  # Format is either "json" or "common".
+  #
+  # Optional
+  # Default: "common"
+  #
+  format: common
+
+################################################################
+# API and dashboard configuration
+################################################################
+
+# Enable API and dashboard
+#
+# Optional
+#
+api:
+  # Enable the API in insecure mode
+  #
+  # Optional
+  # Default: false
+  #
+  insecure: true
+
+  # Enabled Dashboard
+  #
+  # Optional
+  # Default: true
+  #
+  dashboard: true
+
+################################################################
+# Ping configuration
+################################################################
+
+# Enable ping
+ping:
+  # Name of the related entry point
+  #
+  # Optional
+  # Default: "traefik"
+  #
+  entryPoint: traefik
