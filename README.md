@@ -63,7 +63,7 @@ Aunque recomiendo utilizar los docker compose que hay en cada repositorio de cad
 ![](https://raw.githubusercontent.com/gsmx64/cf-devops/main/docs/project-cf-blog.jpg)
 
 ## Descarga del PDF descriptivo del proyecto
-(Próximamente luego de presentarlo y se de de baja el cluster se hará público)
+(Próximamente luego de presentarlo, y que se de la baja del cluster, se hará público)
 
 ## License
 Este proyecto está licenciado con [GPL-3.0-1](https://github.com/gsmx64/cf-jsbackend-blog?tab=GPL-3.0-1-ov-file#readme).
