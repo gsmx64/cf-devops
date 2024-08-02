@@ -136,6 +136,16 @@
     dnf install -y postgresql15-server
     dnf install -y postgresql15-contrib
 
+- name: PostgreSQL 15 - Configure pg_hba.conf to enable MD5
+  copy:
+    src: "../../postgresql/data/pg_hba.conf"
+    dest: "/var/lib/pgsql/15/data/pg_hba.conf"
+
+- name: PostgreSQL 15 - Configure postgresql.conf to enable listen_addresses
+  copy:
+    src: "../../postgresql/data/postgresql.conf"
+    dest: "/var/lib/pgsql/15/data/postgresql.conf"
+
 - name: PostgreSQL 15 - Enable the PostgreSQL service
   shell: |
     systemctl enable postgresql-15
@@ -143,13 +153,6 @@
 - name: PostgreSQL 15 - Start the PostgreSQL service
   shell: |
     systemctl start postgresql-15
-
-#- name: PostgreSQL 15 for SonarQube - Init PostgreSQL DB
-#  become: yes
-#  shell: |
-#    rm -rf /var/lib/pgsql/15/data
-#    /usr/pgsql-15/bin/postgresql-15-setup initdb
-#    chown -R postgres:postgres /var/lib/pgsql/15/data
 
 - name: PostgreSQL 15 - Create DBA user
   become: yes
@@ -162,21 +165,6 @@
     login_user: postgres
     login_password: postgres_this_password_will_change
 
-#- name: PostgreSQL 15 - Grant Privileges to the dba user
-#  community.postgresql.postgresql_privs:
-#    db: postgres
-#    privs: ALL
-#    schema: public
-#    role: PUBLIC
-#    login_host: 127.0.0.1
-#    login_user: postgres
-#    login_password: postgres_this_password_will_change
-
-#- name: PostgreSQL 15 - Configure pg_hba.conf to enable MD5
-#  copy:
-#    src: "../../pg_hba.conf"
-#    dest: "/var/lib/pgsql/15/data/pg_hba.conf"
-
 - name: PostgreSQL 15 - Reload configuration
   become: yes
   become_user: postgres
@@ -186,6 +174,11 @@
   shell: |
     sudo dnf module enable mysql:8.0
     sudo dnf install @mysql
+
+- name: MySQL 8.0 - Configure MySQL to bind to all interfaces
+  copy:
+    src: "../../mysql/my.cnf.d/mysql-server.cnf"
+    dest: "/etc/my.cnf.d/mysql-server.cnf"
 
 - name: MySQL 8.0 - Enable and start the MySQL service
   shell: |
@@ -223,9 +216,13 @@
     login_user: postgres
     login_password: postgres_this_password_will_change
 
-- name: SonarQube - Add system requirements
+- name: SonarQube - Add system requirements on next restart
+  copy:
+    src: "../../system/sysctl.conf"
+    dest: "/etc/sysctl.conf"
+
+- name: SonarQube - Add system requirements for this session until restart
   shell: |
-    
     sysctl -w vm.max_map_count=524288
     sysctl -w fs.file-max=131072
     ulimit -n 131072
@@ -504,4 +501,5 @@
     - {port: "5000", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "5173", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "8080", proto: "tcp", state: "enabled", zone: "public" }
+    - {port: "8081", proto: "tcp", state: "enabled", zone: "public" }
     - {port: "9000", proto: "tcp", state: "enabled", zone: "public" }
