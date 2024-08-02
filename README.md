@@ -13,7 +13,7 @@ Se realiza el despliegue del ciclo completo CI/CD de 3 aplicaciones:
 
 ### Infraestructura
 
-https://raw.githubusercontent.com/gsmx64/cf-devops/main/docs/cf-devops-infraestructure.png
+![](https://raw.githubusercontent.com/gsmx64/cf-devops/main/docs/cf-devops-infraestructure.png)
 
 Hay un servidor principal llamado main1, desde donde se corre:
 * Motor de base de datos MySQL 8.0 (para el entorno de testing y producción),
